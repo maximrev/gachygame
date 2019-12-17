@@ -8,35 +8,38 @@ canv =Canvas(root, bg='white')
 canv.pack(fill=BOTH, expand=1)
 width = 800
 height = 600
+num_of_lines = 8
+line_width = width/num_of_lines
+block_height = 5
+class Line:
+	def __init__(self, x):
+		self.x = x
 
-
-for i in range (1, 7) :
-	canv.create_line(i * width/8, 0, i * width/8, height)
-
-class Key:
-	def __init__(self):
-		self.x = 0
+class Block:
+	def __init__(self, x, block_height, vy):
+		self.x = x
 		self.y = 0
-		self.vy = 0
+		self.vy = vy
+		self.block_height = block_height
 		self.life = True
 		self.color = randrange(1, 6, 1)
 		if self.color == 1 :
-			self.id = canv.create_rectangle(self.x, self.y, self.x + width/8, self.y + height/5, fill = 'black')
+			self.id = canv.create_rectangle(self.x, self.y, self.x - line_width, self.y + block_height, fill = 'black')
 		else :
-			self.id = canv.create_rectangle(self.x, self.y, self.x + width/8, self.y + height/5, fill = 'white')				
-	def move_key(self):
+			self.id = canv.create_rectangle(self.x, self.y, self.x - line_width, self.y + block_height, fill = 'white')				
+	def move(self):
 		self.y += self.vy
 		canv.move(self.id, 0, self.vy)
 
-keys = []
-keys.append(Key())
-keys[0].vy = 5
+lines = [Line(i*line_width) for i in range(1, num_of_lines)]
+
+blocks = [Block(lines[i-1].x, block_height * i, i/10) for i in range(1, num_of_lines)]
 
 def upd(event=''):
-	for key in keys :
-		key.move_key()
+	for block in blocks :
+		block.move()
 	canv.update()
-	root.after(100, upd)
+	root.after(1, upd)
 
 upd()
 
