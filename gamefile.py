@@ -43,18 +43,32 @@ class Button:
 		self.x = x
 		self.y = height - button_height
 		self.height = button_height
-		self.actionBtn = tk.Button(root,activeforeground = "white", borderwidth = 1, bg = "black", command = self.clicked).place(x = self.x, y = self.y, width = line_width, height = self.height)
-#		self.id = canv.create_rectangle(self.x, self.y, self.x - line_width, self.y + self.height, fill = 'red')
+		self.actionBtn = tk.Button(root, activeforeground = "white", borderwidth = 1, bg = "black", command = self.clicked).place(x = self.x, y = self.y, width = line_width, height = self.height)
 	def clicked(self):
-		found = 0
 		for block in blocks:
 			if block.x == self.x + line_width - 1:
-				block.life = False
-				found = 1
-				continue
-		if found == 1:
-			HP -= 1
+				if block.y + block.height >= self.y and block.y <= self.y:
+					block.life = False
+					continue
+		global HP
+		HP -= 1
 
+class HP_Bar:
+	def __init__(self, x, y):
+		self.x = x
+		self.y = y
+		self.text_var = tk.StringVar()
+		self.text_var.set(HP)
+		self.label = tk.Label(root, textvariable = self.text_var).place(x = self.x, y = self.y)
+	def upd(self):
+		if HP == 0:
+			lose()
+		self.text_var.set(HP)
+		
+def lose():				#change it
+	quit()
+
+hp_bar = HP_Bar(0, 0)
 lines = [Line(i*line_width) for i in range(1, num_of_lines)]
 blocks = [Block(lines[i-1].x, block_height * i, i/10) for i in range(1, num_of_lines)]
 buttons = [Button(lines[i-1].x - line_width, button_height) for i in range(1, num_of_lines)]
@@ -62,6 +76,7 @@ buttons = [Button(lines[i-1].x - line_width, button_height) for i in range(1, nu
 def upd(event=''):
 	for block in blocks :
 		block.move()
+	hp_bar.upd()
 	canv.update()
 	root.after(1, upd)
 
