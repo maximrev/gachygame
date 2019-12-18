@@ -19,10 +19,11 @@ class Line:
 		self.x = x
 
 class Block:
-	def __init__(self, x, block_height, vy):
+	def __init__(self, line, x, block_height, vy):
 		self.x = x - 1
 		self.y = 0
 		self.vy = vy
+		self.line = line
 		self.height = block_height
 		self.life = True
 #		self.color = randrange(1, 6, 1)
@@ -32,6 +33,10 @@ class Block:
 #			self.id = canv.create_rectangle(self.x, self.y, self.x - line_width, self.y + self.height, fill = 'white')				
 	def move(self):
 		if self.life == True:
+			if self.y > buttons[self.line].y:
+				self.life = False
+				global HP
+				HP -= 1
 			self.y += self.vy
 			canv.move(self.id, 0, self.vy)
 		else:
@@ -39,14 +44,15 @@ class Block:
 			del self
 
 class Button:
-	def __init__(self, x, button_height):
+	def __init__(self, line, x, button_height):
 		self.x = x
 		self.y = height - button_height
+		self.line = line
 		self.height = button_height
 		self.actionBtn = tk.Button(root, activeforeground = "white", borderwidth = 1, bg = "black", command = self.clicked).place(x = self.x, y = self.y, width = line_width, height = self.height)
 	def clicked(self):
 		for block in blocks:
-			if block.x == self.x + line_width - 1:
+			if block.line == self.line:
 				if block.y + block.height >= self.y and block.y <= self.y:
 					block.life = False
 					continue
@@ -70,8 +76,8 @@ def lose():				#change it
 
 hp_bar = HP_Bar(0, 0)
 lines = [Line(i*line_width) for i in range(1, num_of_lines)]
-blocks = [Block(lines[i-1].x, block_height * i, i/10) for i in range(1, num_of_lines)]
-buttons = [Button(lines[i-1].x - line_width, button_height) for i in range(1, num_of_lines)]
+blocks = [Block(i-1, lines[i-1].x, block_height * i, i/10) for i in range(1, num_of_lines)]
+buttons = [Button(i-1, lines[i-1].x - line_width, button_height) for i in range(1, num_of_lines)]
 
 def upd(event=''):
 	for block in blocks :
