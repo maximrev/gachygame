@@ -6,6 +6,7 @@ import threading
 import os
 import pygame as pg
 from playsound import playsound
+import time
 
 
 root = tk.Tk()
@@ -22,7 +23,8 @@ block_height = 30
 button_height = 30
 keys = [i for i in range(1, num_of_lines)]
 pressed = [0 for i in range(1, num_of_lines)]
-
+pressed_enter = [0 for i in range(1, num_of_lines)]
+timecodes = open("timecodes.txt","w+")
 
 class Line:
 	def __init__(self, x):
@@ -94,6 +96,10 @@ def on_press(key):
 				buttons[i-1].clicked()
 				buttons[i-1].actionBtn.config(bg='white')
 				pressed[i-1] = 1
+		if key == key.enter:
+			if pressed_enter[0] == 0:
+				pressed_enter[0] = 1
+				write_timecode()
 
 
 def on_release(key):
@@ -101,9 +107,13 @@ def on_release(key):
 		if "'" + str(keys[i-1]) + "'" == str(key):
 			if pressed[i-1] == 1:
 				buttons[i-1].actionBtn.config(bg='black')
-				pressed[i-1] = 0
+				pressed[i-1] = 0		
+	if key == key.enter:
+		pressed_enter[0] = 0
+
 	if key == Key.esc:
-        	os._exit(1)
+		timecodes.close()
+		os._exit(1)
 
 def start_capture():
 	with Listener(on_press=on_press, on_release=on_release) as listener:
@@ -114,6 +124,10 @@ def music(filename):
 '''	pg.mixer.init()
 	pg.mixer.music.load(filename)
 	pg.mixer.music.play()'''
+
+def write_timecode():
+	time_now = time.time()
+	timecodes.write(str(time_now - time_begin) + '\n')
 
 def upd(event=''):
 	for block in blocks :
@@ -130,6 +144,8 @@ buttons = [Button(i-1, lines[i-1].x - line_width, button_height) for i in range(
 
 thread1 = threading.Thread(target = start_capture)
 thread1.start()
+
+time_begin = time.time()
 
 filename = 'music/Junost_v_sapogah.mp3'
 thread2 = threading.Thread(target = music, args = (filename, ))
