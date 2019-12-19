@@ -1,10 +1,11 @@
 import tkinter as tk
 from random import *
 from pynput import keyboard
-from Block import *
 from pynput.keyboard import Key, Listener
 import threading
 import os
+import pygame as pg
+from playsound import playsound
 
 
 root = tk.Tk()
@@ -108,6 +109,12 @@ def start_capture():
 	with Listener(on_press=on_press, on_release=on_release) as listener:
 		listener.join()
 
+def music(filename):
+	playsound(filename)
+'''	pg.mixer.init()
+	pg.mixer.music.load(filename)
+	pg.mixer.music.play()'''
+
 def upd(event=''):
 	for block in blocks :
 		block.move()
@@ -123,6 +130,10 @@ buttons = [Button(i-1, lines[i-1].x - line_width, button_height) for i in range(
 
 thread1 = threading.Thread(target = start_capture)
 thread1.start()
+
+filename = 'music/Junost_v_sapogah.mp3'
+thread2 = threading.Thread(target = music, args = (filename, ))
+thread2.start()
 
 upd()
 
