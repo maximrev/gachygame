@@ -8,49 +8,60 @@ import pygame as pg
 from playsound import playsound
 import time
 
-
-root = tk.Tk()
-fr = tk.Frame(root)
-root.geometry('800x600')
-canv = tk.Canvas(root, bg='white')
-canv.pack(fill=tk.BOTH, expand=1)
-width = 800
-height = 600
-HP = 10
-num_of_lines = 8
+#root2 = tk.Tk()
+#fr = tk.Frame(root2)
+#root2.geometry('1366x700')
+#canv = tk.Canvas(root2, bg='white')
+#canv.pack(fill=tk.BOTH, expand=1)
+width = 1366
+height = 700
+#HP = 50
+score = 0
+num_of_lines = 5
 line_width = width/num_of_lines
-block_height = 30
+block_height = 70
 button_height = 30
+vy = 200
+tick = 10
 keys = [i for i in range(1, num_of_lines)]
 pressed = [0 for i in range(1, num_of_lines)]
 pressed_enter = [0 for i in range(1, num_of_lines)]
-timecodes = open("timecodes.txt","w+")
+mode = 1
+blocks = []
+xline = [0 for i in range(2)]
+max_num=0
 
 class Line:
 	def __init__(self, x):
 		self.x = x
 
 class Block:
-	def __init__(self, line, x, block_height, vy):
+	def __init__(self, line, x, y, block_height, vy, col_num):
 		self.x = x - 1
-		self.y = 0
+		self.y = y
 		self.vy = vy
 		self.line = line
 		self.height = block_height
+		self.times = [time.time(), time.time()]
 		self.life = True
+		self.colors = ['red', 'orange', 'yellow', 'green', 'blue', 'purple']
+#		self.color = '#%02x%02x%02x' % (randint(0,255), randint(0,255), randint(0,255))
 #		self.color = randrange(1, 6, 1)
 #		if self.color == 1 :
-		self.id = canv.create_rectangle(self.x, self.y, self.x - line_width + 1, self.y + self.height, fill = 'white')
+		self.id = canv.create_rectangle(self.x, self.y, self.x - line_width + 1, self.y + self.height, fill = self.colors[5-col_num])
 #		else :
 #			self.id = canv.create_rectangle(self.x, self.y, self.x - line_width, self.y + self.height, fill = 'white')				
 	def move(self):
 		if self.life == True:
 			if self.y > buttons[self.line].y:
 				self.life = False
-				global HP
-				HP -= 1
-			self.y += self.vy
-			canv.move(self.id, 0, self.vy)
+#				global HP
+#				HP -= 1
+			self.delta_t = self.times[0] - self.times[1]
+			self.times[1] = self.times[0]
+			self.times[0] = time.time()
+			self.y += self.delta_t * self.vy
+			canv.move(self.id, 0, self.delta_t * self.vy)
 		else:
 			canv.delete(self.id)
 			del self
@@ -61,30 +72,33 @@ class Button:
 		self.y = height - button_height
 		self.line = int(line)
 		self.height = button_height
-		self.actionBtn = tk.Button(root, text = self.line + 1, fg = 'red', activeforeground = "white", borderwidth = 1, bg = "black", command = self.clicked)
+		self.actionBtn = tk.Button(root2, text = self.line + 1, fg = 'red', activeforeground = "white", borderwidth = 1, bg = "black", command = self.clicked)
 		self.actionBtn.place(x = self.x, y = self.y, width = line_width, height = self.height)
 	def clicked(self):
-		buf = 0
+#		buf = 0
 		for block in blocks:
 			if block.line == self.line:
 				if block.y + block.height >= self.y and block.y <= self.y:
-					block.life = False
-					buf = 1
-		if buf == 0:
-			global HP
-			HP -= 1
+					if block.life == True:
+						block.life = False
+						global score 
+						score += 1
+#					buf = 1
+#		if buf == 0:
+#			global HP
+#			HP -= 1
 
 class HP_Bar:
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y
 		self.text_var = tk.StringVar()
-		self.text_var.set(HP)
-		self.label = tk.Label(root, textvariable = self.text_var).place(x = self.x, y = self.y)
+		self.text_var.set(score)
+		self.label = tk.Label(root2, textvariable = self.text_var).place(x = self.x, y = self.y)
 	def upd(self):
-		if HP == 0:
-			lose()
-		self.text_var.set(HP)
+#		if HP == 0:
+#			lose()
+		self.text_var.set(score)
 		
 def lose():				#change it
 	os._exit(1)
@@ -96,7 +110,7 @@ def on_press(key):
 				buttons[i-1].clicked()
 				buttons[i-1].actionBtn.config(bg='white')
 				pressed[i-1] = 1
-		if key == key.enter:
+		if key == Key.enter:
 			if pressed_enter[0] == 0:
 				pressed_enter[0] = 1
 				write_timecode()
@@ -108,11 +122,12 @@ def on_release(key):
 			if pressed[i-1] == 1:
 				buttons[i-1].actionBtn.config(bg='black')
 				pressed[i-1] = 0		
-	if key == key.enter:
+	if key == Key.enter:
 		pressed_enter[0] = 0
 
 	if key == Key.esc:
-		timecodes.close()
+		if mode == 0:
+			timecodes.close()
 		os._exit(1)
 
 def start_capture():
@@ -127,30 +142,59 @@ def music(filename):
 
 def write_timecode():
 	time_now = time.time()
-	timecodes.write(str(time_now - time_begin) + '\n')
+	if mode == 0:
+		timecodes.write(str(time_now - time_begin) + '\n')
+
+def create_blocks(filename_timecodes):
+	ready_timecodes = open(filename_timecodes, "r")
+	col_num = 0
+	for line in ready_timecodes:
+		xline[1] = randint(0, num_of_lines - 2)
+		while xline[1] == xline[0]:
+			xline[1] = randint(0, num_of_lines - 2)
+		xline[0] = xline[1]
+		y = height - button_height - block_height/2 - vy*float(line)
+		blocks.append(Block(xline[1], lines[xline[1]].x, y, block_height, vy, col_num % 6))
+		col_num += 1
+		global max_num
+		max_num += 1
 
 def upd(event=''):
 	for block in blocks :
 		block.move()
 	hp_bar.upd()
 	canv.update()
-	root.after(1, upd)
+	root2.after(tick, upd)
 
-hp_bar = HP_Bar(0, 0)
+def start():
+	global root2, canv, lines, buttons, time_begin, hp_bar
+	root2 = tk.Tk()
+	fr = tk.Frame(root2)
+	root2.geometry('1366x700')
+	canv = tk.Canvas(root2, bg='white')
+	canv.pack(fill=tk.BOTH, expand=1)
+	
+	hp_bar = HP_Bar(0, 0)
+	
+	lines = [Line(i*line_width) for i in range(1, num_of_lines)]
+	#blocks = [Block(i-1, lines[i-1].x, block_height * i, i/10) for i in range(1, num_of_lines)]
+	if mode == 0:
+		timecodes = open("timecodes.txt","w+")
+	else:
+		create_blocks("timecodes.txt")
+	buttons = [Button(i-1, lines[i-1].x - line_width, button_height) for i in range(1, num_of_lines)]
 
-lines = [Line(i*line_width) for i in range(1, num_of_lines)]
-blocks = [Block(i-1, lines[i-1].x, block_height * i, i/10) for i in range(1, num_of_lines)]
-buttons = [Button(i-1, lines[i-1].x - line_width, button_height) for i in range(1, num_of_lines)]
+	time_begin = time.time()
+	
+	thread1 = threading.Thread(target = start_capture)
+	thread1.start()
+	
+	filename = 'music/Junost_v_sapogah.mp3'
+	thread2 = threading.Thread(target = music, args = (filename, ))
+	thread2.start()
 
-thread1 = threading.Thread(target = start_capture)
-thread1.start()
-
-time_begin = time.time()
-
-filename = 'music/Junost_v_sapogah.mp3'
-thread2 = threading.Thread(target = music, args = (filename, ))
-thread2.start()
-
-upd()
-
-tk.mainloop()
+	upd()
+	
+	
+	
+#start()
